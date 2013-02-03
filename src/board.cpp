@@ -60,6 +60,7 @@ void Board::clear()
 
 int& Board::getField(int x, int y)
 {
+    // siatka网兜？其实是描述棋盘状态的整型数组。
     return siatka[x + boardSize * y];
 }
 

@@ -25,6 +25,8 @@ void GomokuWidget::newGame()
     wygral = 0;
     board.clear();
     isEnd = false;
+
+    turn_=PLAYER1;
 }
 
 GomokuWidget::GomokuWidget(QWidget *parent)
@@ -92,6 +94,7 @@ void GomokuWidget::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
+    // MWO:绘制棋盘
     painter.setPen(QPen(Qt::black, 1.0));
     int half = cellSize() / 2;
     for (int x = 0; x < board.size(); x++)
@@ -99,6 +102,7 @@ void GomokuWidget::paintEvent(QPaintEvent *e)
     for (int y = 0; y < board.size(); y++)
         painter.drawLine(fromLeft() + half, cellTop(y) + half, cellLeft(board.size()) - half, cellTop(y) + half);
 
+    // 绘制游戏得分等提示信息
     {
         QFont fontBit(fontName, 40, QFont::Normal);
         painter.setFont(fontBit);
@@ -156,6 +160,8 @@ void GomokuWidget::paintEvent(QPaintEvent *e)
         }
     }
 
+
+    // MWO:画个框框，如果是非触屏的设备，要靠这个框框定位，落子
     {
         int x1 = cellLeft(currentX) + 1;
         int y1 = cellTop(currentY) + 1;
@@ -168,70 +174,90 @@ void GomokuWidget::paintEvent(QPaintEvent *e)
         int gap = cellSize() / 3;
 
         painter.setPen(QPen(Qt::black, 2));
-        painter.drawLine(x1, y1, x1+gap, y1);
+        painter.drawLine(x1, y1, x1+gap, y1);       // 左上拐角
         painter.drawLine(x1, y1, x1, y1+gap);
-        painter.drawLine(x2, y2, x2-gap, y2);
+        painter.drawLine(x2, y2, x2-gap, y2);       // 右上拐角
         painter.drawLine(x2, y2, x2, y2+gap);
-        painter.drawLine(x3, y3, x3+gap, y3);
+        painter.drawLine(x3, y3, x3+gap, y3);       // 左下拐角
         painter.drawLine(x3, y3, x3, y3-gap);
-        painter.drawLine(x4, y4, x4-gap, y4);
+        painter.drawLine(x4, y4, x4-gap, y4);       // 右下拐角
         painter.drawLine(x4, y4, x4, y4-gap);
     }
 
+    // MWO: 画棋石
     for (int x = 0; x < board.size(); x++)
-    for (int y = 0; y < board.size(); y++)
-        if (board.is(1, x, y))
+    {
+        for (int y = 0; y < board.size(); y++)
         {
-            painter.setPen(QPen(Qt::black, 3));
-            painter.setBrush(Qt::black);
-            painter.drawEllipse(cellLeft(x) + 4, cellTop(y) + 4, cellSize() - 8, cellSize() - 8);
+            if (board.is(1, x, y))
+            {
+                painter.setPen(QPen(Qt::black, 3));
+                painter.setBrush(Qt::black);
+                painter.drawEllipse(cellLeft(x) + 4, cellTop(y) + 4, cellSize() - 8, cellSize() - 8);
+            }
+            else if (board.is(2, x, y))
+            {
+                painter.setPen(QPen(Qt::black, 3));
+                painter.setBrush(Qt::white);
+                painter.drawEllipse(cellLeft(x) + 4, cellTop(y) + 4, cellSize() - 8, cellSize() - 8);
+            }
         }
-        else if (board.is(2, x, y))
-        {
-            painter.setPen(QPen(Qt::black, 3));
-            painter.setBrush(Qt::white);
-            painter.drawEllipse(cellLeft(x) + 4, cellTop(y) + 4, cellSize() - 8, cellSize() - 8);
-        }
+    }
 }
 
 void GomokuWidget::move()
 {
-    if (board.getField(currentX, currentY) > 0) return;
-    board.getField(currentX, currentY) = 1;
-    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;
-    ruchy.push(currentX);
-    ruchy.push(currentY);
-    if (board.hasWon(1))
+    switch (turn_)
     {
-        ruchy.push(-1);
-        ruchy.push(-1);
-        wygral = 1;
-        return;
+        case PLAYER1:
+            movePlayer1();
+            break;
+        case PLAYER2:
+            movePlayer2();
+            break;
     }
-    if (board.isDraw())
-    {
-        ruchy.push(-1);
-        ruchy.push(-1);
-        wygral = 3;
-        return;
-    }
-    int x, y;
-    board.getNextMove(x, y, 2);
-    currentX = x;
-    currentY = y;
-    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;
-    ruchy.push(currentX);
-    ruchy.push(currentY);
-    if (board.hasWon(2))
-    {
-        wygral = 2;
-        return;
-    }
-    if (board.isDraw())
-    {
-        wygral = 3;
-        return;
-    }
+//    // MWO:看来确实如此，siatka上0表示没有子，1表示黑子，2表示白子
+//    if (board.getField(currentX, currentY) > 0) return;
+//
+//    // MWO:这个略显犀利，既然你在界面里直接操纵siatka和kolejnosc了，给它声明为private做甚？
+//    // MWO:黑子落子
+//    board.getField(currentX, currentY) = 1;
+//    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;    // 手数
+//    ruchy.push(currentX);       // 当前落子位
+//    ruchy.push(currentY);
+//    if (board.hasWon(1))
+//    {
+//        ruchy.push(-1);
+//        ruchy.push(-1);
+//        wygral = 1;     // 黑子胜
+//        return;
+//    }
+//    if (board.isDraw())
+//    {
+//        ruchy.push(-1);
+//        ruchy.push(-1);
+//        wygral = 3;     // 平局
+//        return;
+//    }
+//
+//    // 以下AI相关
+//    int x, y;
+//    board.getNextMove(x, y, 2);
+//    currentX = x;
+//    currentY = y;
+//    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;
+//    ruchy.push(currentX);
+//    ruchy.push(currentY);
+//    if (board.hasWon(2))
+//    {
+//        wygral = 2;
+//        return;
+//    }
+//    if (board.isDraw())
+//    {
+//        wygral = 3;
+//        return;
+//    }
 }
 
 void GomokuWidget::undo()
@@ -332,4 +358,56 @@ void GomokuWidget::mousePressEvent(QMouseEvent *event)
         update();
         refreshScreen();
     }
+}
+
+// MWO: 玩家1和玩家2的移动。TODO:使其均可人/AI
+void GomokuWidget::movePlayer1(void)
+{
+    // MWO:看来确实如此，siatka上0表示没有子，1表示黑子，2表示白子
+    if (board.getField(currentX, currentY) > 0) return;
+
+    // MWO:这个略显犀利，既然你在界面里直接操纵siatka和kolejnosc了，给它声明为private做甚？
+    // MWO:黑子落子
+    board.getField(currentX, currentY) = 1;
+    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;    // 手数
+    ruchy.push(currentX);       // 当前落子位
+    ruchy.push(currentY);
+    if (board.hasWon(1))
+    {
+        ruchy.push(-1);
+        ruchy.push(-1);
+        wygral = 1;     // 黑子胜
+        return;
+    }
+    if (board.isDraw())
+    {
+        ruchy.push(-1);
+        ruchy.push(-1);
+        wygral = 3;     // 平局
+        return;
+    }
+    turn_=PLAYER2;
+}
+void GomokuWidget::movePlayer2(void)
+{
+    if (board.getField(currentX, currentY) > 0) return;
+    board.getField(currentX, currentY) = 2;
+    board.getMoveNumber(currentX, currentY) = ruchy.count() / 2 + 1;    // 手数
+    ruchy.push(currentX);       // 当前落子位
+    ruchy.push(currentY);
+    if (board.hasWon(2))
+    {
+        ruchy.push(-1);
+        ruchy.push(-1);
+        wygral = 2;     // 黑子胜
+        return;
+    }
+    if (board.isDraw())
+    {
+        ruchy.push(-1);
+        ruchy.push(-1);
+        wygral = 3;     // 平局
+        return;
+    }
+    turn_=PLAYER1;
 }

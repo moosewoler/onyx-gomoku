@@ -48,6 +48,15 @@ private:
     bool event(QEvent * event);
     void keyReleaseEvent(QKeyEvent *ke);
     void mousePressEvent(QMouseEvent *event);
+
+private:
+    enum PlayerEnum{
+        PLAYER1 = 0,
+        PLAYER2,
+    };
+    PlayerEnum turn_;
+    void movePlayer1();
+    void movePlayer2();
 };
 
 #endif // GOMOKU_WIDGET_H
